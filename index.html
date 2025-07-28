@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Romantic Night-time Beach Scene</title>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Merriweather:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Remove default margins and ensure canvas fills the viewport */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      overflow: hidden; /* Prevent scrollbars */
+    }
+    canvas {
+      display: block; /* Removes small gaps below inline elements */
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <!-- Canvas used for the entire scene -->
+  <canvas id="scene"></canvas>
+
+  <script>
+    // Grab canvas & context
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    let grassTufts = [];
+    let pathPebbles = [];
+    let moon = { x: 0, y: 0, r: 0, craters: [] }; // moon data
+    // Audio setup (replace the src with a valid file path or URL to Chaand Baliyan)
+    const song = new Audio('chaand_baliyan.mp3');
+    song.loop = true; // play continuously once started
+
+    // Canvas click toggles song when moon is clicked
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const cy = (e.clientY - rect.top)  * (canvas.height / rect.height);
+      const dist = Math.hypot(cx - moon.x, cy - moon.y);
+      if (dist <= moon.r) {
+        if (song.paused) song.play();
+        else song.pause();
+      }
+    });
+
+    function initHillDecor() {
+      const { hillTop, hillBottom } = layout;
+      const hillHeight = hillBottom - hillTop;
+
+      // Grass
+      grassTufts = [];
+      const tuftCount = Math.floor(width / 14);
+      for (let i = 0; i < tuftCount; i++) {
+        const x = Math.random() * width;
+        const y = hillTop + Math.random() * hillHeight * 0.6;
+        grassTufts.push({ x, y });
+      }
+
+      // Pathway pebbles
+      pathPebbles = [];
+      const pathHeight = Math.max(6, hillHeight * 0.12);
+      const pathTop = hillTop + hillHeight * 0.4 - pathHeight / 2;
+      const pebbleCount = Math.floor(width / 60);
+      for (let i = 0; i < pebbleCount; i++) {
+        pathPebbles.push({
+          x: Math.random() * width,
+          y: pathTop + Math.random() * pathHeight,
+          r: Math.random() * 1.5 + 0.5
+        });
+      }
+    }
+
+    let sandPattern;
+
+    function initSandTexture() {
+      // Create off-screen canvas for sand grain pattern
+      const size = 120; // px
+      const off = document.createElement('canvas');
+      off.width = off.height = size;
+      const ictx = off.getContext('2d');
+
+      // Base sand color
+      ictx.fillStyle = '#c7b386';
+      ictx.fillRect(0, 0, size, size);
+
+      // Add noisy grains
+      const grainCount = 700;
+      for (let i = 0; i < grainCount; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = Math.random() * 1.2 + 0.3;
+        // Alternate between lighter and darker specks
+        ictx.fillStyle = Math.random() > 0.5 ? 'rgba(232,221,186,0.55)' : 'rgba(139,118,87,0.55)';
+        ictx.beginPath();
+        ictx.arc(x, y, r, 0, Math.PI * 2);
+        ictx.fill();
+      }
+
+      sandPattern = ctx.createPattern(off, 'repeat');
+    }
+
+    let sandEdgePoints = [];
+    function initSandEdge() {
+      const { sandTop } = layout;
+      sandEdgePoints = [];
+      const step = 80; // px between control points
+      const amp = Math.max(8, height * 0.02); // amplitude of irregularity
+      for (let x = 0; x <= width; x += step) {
+        const y = sandTop + (Math.random() - 0.5) * amp;
+        sandEdgePoints.push({ x, y });
+      }
+      // ensure last point at width
+      if (sandEdgePoints[sandEdgePoints.length - 1].x < width) {
+        sandEdgePoints.push({ x: width, y: sandTop + (Math.random() - 0.5) * amp });
+      }
+    }
+
+    function resize() {
+      width  = canvas.width  = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      updateLayout();
+      initSandTexture(); // generate new pattern for current resolution
+      initSandEdge();
+      initHillDecor();
+      initMoon();
+      initStars();
+      initClouds();
+    }
+    window.addEventListener('resize', resize);
+
+    /* ---------------------------
+       STAR SETUP (Twinkling)
+    --------------------------- */
+    const STAR_COUNT = 160;
+    let stars = [];
+
+    class Star {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * layout.skyBottom; // only in the sky region
+        this.r = Math.random() * 1.8 + 0.2;   // radius
+        this.baseAlpha = Math.random() * 0.6 + 0.2;
+        this.alphaRange = Math.random() * 0.4 + 0.2;
+        this.speed = Math.random() * 0.002 + 0.001; // twinkle speed
+        this.phase = Math.random() * Math.PI * 2;
+      }
+      update(t) {
+        // Simple sine-wave based twinkle
+        this.alpha = this.baseAlpha + Math.sin(t * this.speed + this.phase) * this.alphaRange;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${this.alpha})`;
+        ctx.fill();
+      }
+    }
+
+    function initStars() {
+      stars = Array.from({ length: STAR_COUNT }, () => new Star());
+    }
+
+    /* ---------------------------
+       CLOUD SETUP (Drifting)
+    --------------------------- */
+    const CLOUD_COUNT = 7;
+    let clouds = [];
+
+    class Cloud {
+      constructor() { this.reset(); }
+      reset() {
+        this.scale  = Math.random() * 0.5 + 0.5; // relative size
+        this.x      = Math.random() * width;
+        // Clouds float inside sky region (upper 60% of sky band)
+        const skyBand = layout.skyBottom;
+        this.y      = Math.random() * layout.skyBottom * 0.3 + layout.skyBottom * 0.55; // cluster nearer horizon
+        this.speed  = (Math.random() * 0.15 + 0.05) * this.scale; // consistent visual speed
+        this.opacity = Math.random() * 0.25 + 0.15;
+      }
+      update(delta) {
+        this.x += this.speed * delta * 0.05; // convert ms delta to px movement
+        if (this.x - 250 * this.scale > width) {
+          // Recycle cloud to the left once it exits right side
+          this.x = -250 * this.scale;
+          this.y = Math.random() * layout.skyBottom * 0.3 + layout.skyBottom * 0.55; // cluster nearer horizon
+        }
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scale, this.scale);
+        ctx.globalAlpha = this.opacity;
+        drawCloudShape();
+        ctx.restore();
+      }
+    }
+
+    // Helper to draw a cloud from overlapping circles
+    function drawCloudShape() {
+      const r = 40; // base radius
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-r, 0, r, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.arc(0, -r * 0.6, r * 1.2, Math.PI, 0);
+      ctx.arc(r * 1.3, 0, r * 0.9, Math.PI * 1.5, Math.PI * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function initClouds() {
+      clouds = Array.from({ length: CLOUD_COUNT }, () => new Cloud());
+    }
+
+    // === NEW LAYER CONSTANTS (TOP-DOWN VIEW) ===
+    // --- adjust band percentages for viewpoint perspective ---
+    const HILL_PERC  = 0.0;  // no hill band
+    const SAND_PERC  = 0.08; // beach at the bottom
+    const WATER_PERC = 0.22; // above sand
+    // Sky gets the remaining ~70%
+
+    // === NEW LAYOUT CALCULATION OBJECT ===
+    let layout = {};
+
+    function updateLayout() {
+      const hillHeight  = height * HILL_PERC;
+      const sandHeight  = height * SAND_PERC;
+      const waterHeight = height * WATER_PERC;
+
+      const skyHeight   = Math.max(0, height - (hillHeight + sandHeight + waterHeight));
+
+      layout = {
+        skyTop: 0,
+        skyBottom: skyHeight,
+        waterTop: skyHeight,
+        waterBottom: skyHeight + waterHeight,
+        sandTop: skyHeight + waterHeight,
+        sandBottom: skyHeight + waterHeight + sandHeight,
+        hillTop: height - hillHeight, // top of hill band
+        hillBottom: height
+      };
+    }
+
+    function initMoon() {
+      const skyHeight = layout.skyBottom;
+      moon.r = Math.min(width, height) * 0.07;
+      moon.x = width - moon.r * 1.4;
+      moon.y = moon.r * 1.4; // within sky band top
+
+      // Generate crater positions (fixed per resize)
+      moon.craters = [];
+      const craterCount = 8;
+      for (let i = 0; i < craterCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * moon.r * 0.5;
+        const cx = moon.x + Math.cos(angle) * dist;
+        const cy = moon.y + Math.sin(angle) * dist;
+        const cr = moon.r * (Math.random() * 0.08 + 0.04);
+        moon.craters.push({ cx, cy, cr });
+      }
+    }
+
+    /* ---------------------------
+       ANIMATION LOOP
+    --------------------------- */
+    let lastTime = 0;
+    function animate(time = 0) {
+      const delta = time - lastTime;
+      lastTime = time;
+
+      // Clear entire canvas
+      ctx.clearRect(0, 0, width, height);
+
+      drawSky(time, delta);  // topmost layer
+      drawWater(time);       // below sky
+      drawSand();            // beach strip
+      // drawHill();  // hill removed
+      drawMessage(time); // overlay animated text
+
+      requestAnimationFrame(animate);
+    }
+    // Right before starting the animation loop, ensure we size & initialize once
+    resize();
+    requestAnimationFrame(animate);
+
+    /* ---------------------------
+       DRAWING LAYERS
+    --------------------------- */
+    function drawSky(t, delta) {
+      const { skyTop, skyBottom } = layout;
+      const skyHeight = skyBottom - skyTop;
+
+      // Sky gradient
+      const skyGrad = ctx.createLinearGradient(0, skyTop, 0, skyBottom);
+      skyGrad.addColorStop(0, '#020b1f');
+      skyGrad.addColorStop(1, '#023055');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, skyTop, width, skyHeight);
+
+      // Stars
+      stars.forEach(s => { s.update(t); s.draw(); });
+
+      // --- Moon rendering ---
+      // 1. Disc
+      ctx.fillStyle = '#fff9e8';
+      ctx.beginPath();
+      ctx.arc(moon.x, moon.y, moon.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Craters
+      ctx.fillStyle = 'rgba(210,210,210,0.35)';
+      moon.craters.forEach(({ cx, cy, cr }) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 3. Outer glow
+      const glowGrad = ctx.createRadialGradient(
+        moon.x,
+        moon.y,
+        moon.r,
+        moon.x,
+        moon.y,
+        moon.r * 1.8
+      );
+      glowGrad.addColorStop(0, 'rgba(255,255,240,0.45)');
+      glowGrad.addColorStop(1, 'rgba(255,255,240,0)');
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath();
+      ctx.arc(moon.x, moon.y, moon.r * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Clouds drifting in front of moon
+      clouds.forEach(c => { c.update(delta); c.draw(); });
+    }
+
+    function drawWater(t) {
+      const { waterTop, waterBottom } = layout;
+      const waterHeight = waterBottom - waterTop;
+
+      ctx.fillStyle = '#033d6a';
+      ctx.fillRect(0, waterTop, width, waterHeight);
+
+      const waveHeight = waterHeight * 0.05;
+      const waveLength = width / 18;
+      const baseSpeed = 0.0008;
+      const rowSpacing = 28; // increased spacing for fewer rows
+      const rows = Math.floor(waterHeight / rowSpacing);
+
+      ctx.lineWidth = 1.1;
+      for (let r = 0; r < rows; r++) {
+        const yRow = waterTop + r * rowSpacing;
+        const speed = baseSpeed * (1 + r * 0.04); // slightly faster lower rows
+        const xOffset = (t * speed) % waveLength;
+        const amp = waveHeight * 0.3 * (1 - r / rows); // smaller amplitude further away (top)
+        ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+
+        ctx.beginPath();
+        for (let x = -xOffset; x <= width + waveLength; x += 10) {
+          const y = yRow + Math.sin((x + xOffset) / waveLength * Math.PI * 2) * amp;
+          if (x === -xOffset) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    function drawSand() {
+      const { sandBottom } = layout;
+      ctx.fillStyle = sandPattern;
+
+      ctx.beginPath();
+      // move to first edge point top
+      if (sandEdgePoints.length) {
+        ctx.moveTo(sandEdgePoints[0].x, sandEdgePoints[0].y);
+        // use quadratic curves between points for smoother shoreline
+        for (let i = 1; i < sandEdgePoints.length; i++) {
+          const prev = sandEdgePoints[i - 1];
+          const curr = sandEdgePoints[i];
+          const midX = (prev.x + curr.x) / 2;
+          const midY = (prev.y + curr.y) / 2;
+          ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
+        }
+        // connect last point directly
+        const last = sandEdgePoints[sandEdgePoints.length - 1];
+        ctx.lineTo(last.x, last.y);
+      }
+      // draw remaining rectangle down to bottom
+      ctx.lineTo(width, sandBottom);
+      ctx.lineTo(0, sandBottom);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawHill() {
+      const { hillTop, hillBottom } = layout;
+      const hillHeight = hillBottom - hillTop;
+
+      // Ground fill (grass base)
+      ctx.fillStyle = '#0d310d';
+      ctx.fillRect(0, hillTop, width, hillHeight);
+
+      // Pathway (muddy track)
+      const pathHeight = Math.max(6, hillHeight * 0.12);
+      const pathTop = hillTop + hillHeight * 0.4 - pathHeight / 2;
+      ctx.fillStyle = '#7a6544';
+      ctx.fillRect(0, pathTop, width, pathHeight);
+
+      // Pebbles on the path
+      ctx.fillStyle = '#a9a9a9';
+      pathPebbles.forEach(({ x, y, r }) => {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Grass tufts (drawn after path to slightly overlap edges)
+      ctx.strokeStyle = '#167a16';
+      ctx.lineWidth = 1;
+      grassTufts.forEach(({ x, y }) => {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y - 6 - Math.random() * 4);
+        ctx.stroke();
+      });
+
+      // Bench
+      const benchWidth  = Math.min(160, width * 0.18);
+      const benchHeight = 10;
+      const benchX = width * 0.5 - benchWidth / 2;
+      const benchY = hillTop + hillHeight * 0.55;
+
+      ctx.fillStyle = '#6b4423';
+      ctx.fillRect(benchX, benchY, benchWidth, benchHeight);
+      ctx.fillRect(benchX + benchWidth * 0.1, benchY + benchHeight, benchWidth * 0.08, benchHeight * 1.8);
+      ctx.fillRect(benchX + benchWidth * 0.82, benchY + benchHeight, benchWidth * 0.08, benchHeight * 1.8);
+    }
+
+    // Proposal letter (multi-paragraph; edit as desired — separate paragraphs with blank lines)
+    const MESSAGE_TEXT = [
+      "Meri Pyaari Gunnu,",
+      "Yep- I did call you meri. I wanted to call you mine the very day when you rested on my shoulder.",
+      "I promise to be there for you, during the times you need me- I want to be your support. your greatest cheerleader, your greatest friend, your greatest partner.",
+      "Even when you don't need me, I'll still be there annoying you with my borderline umm.. racist jokes?",
+      "I really love spending time with you. I admire every single thing about you- from your sweet scent to your soft skin, the way you walk, the way you put your hair behind your ears, the way you look at me.",
+      "I wanna call you my girlfriend and I so badly want to be your boyfriend. I know there are lot of things that we don't have answers to, but then, we'll figure it out together.",
+    ].join("\n\n");
+
+    const TYPE_SPEED = 35; // ms per character
+    let textStartTime = performance.now();
+
+    function drawMessage(now) {
+      const { skyTop, skyBottom } = layout;
+      const yStart = skyTop + (skyBottom - skyTop) * 0.15; // vertical position
+
+      ctx.save();
+
+      const BASE_FONT_PCT = 0.024; // starting font size as fraction of width
+      const MIN_FONT_PCT  = 0.015; // lower bound
+
+      let fontSize = width * BASE_FONT_PCT;
+      const fontFamily = "'Dancing Script', cursive";
+
+      // helper to set font on ctx
+      const setFont = () => { ctx.font = `${fontSize}px ${fontFamily}`; };
+      setFont();
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#ffd6e7'; // soft romantic pink
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 4;
+
+      const elapsed = now - textStartTime;
+      const charsToShow = Math.min(MESSAGE_TEXT.length, Math.floor(elapsed / TYPE_SPEED));
+      const visibleText = MESSAGE_TEXT.slice(0, charsToShow);
+
+      // Utility: word-wrap text to fit max width
+      function wrapText(ctx, text, maxWidth) {
+        const words = text.split(/\s+/);
+        const lines = [];
+        let current = "";
+        words.forEach(word => {
+          const testLine = current ? current + " " + word : word;
+          const { width: w } = ctx.measureText(testLine);
+          if (w > maxWidth && current) {
+            lines.push(current);
+            current = word;
+          } else {
+            current = testLine;
+          }
+        });
+        if (current) lines.push(current);
+        return lines;
+      }
+
+      const paragraphs = visibleText.split("\n");
+
+      const maxTextWidth = width * 0.8;
+
+      let wrappedLines;
+      let lineHeight;
+      let availableHeight = height - yStart - 20; // leave small bottom margin
+
+      // Recompute wrapping and scale font down until fits vertically or min reached
+      while (true) {
+        lineHeight = fontSize * 1.4;
+        wrappedLines = [];
+        paragraphs.forEach(p => {
+          if (p.trim() === "") {
+            wrappedLines.push("\u200B");
+            return;
+          }
+          wrapText(ctx, p, maxTextWidth).forEach(l => wrappedLines.push(l));
+        });
+
+        const neededHeight = wrappedLines.length * lineHeight;
+        if (neededHeight <= availableHeight || fontSize <= width * MIN_FONT_PCT) {
+          break;
+        }
+        // decrease font and re-evaluate
+        fontSize *= 0.9;
+        setFont();
+      }
+
+      let lineY = yStart;
+      wrappedLines.forEach(line => {
+        if (line === "\u200B") {
+          lineY += lineHeight; // blank line spacer
+        } else {
+          ctx.fillText(line, width / 2, lineY);
+          lineY += lineHeight;
+        }
+      });
+      ctx.restore();
+    }
+  </script>
+</body>
+</html>
