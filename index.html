@@ -1,547 +1,1682 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gunnu</title>
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Merriweather:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    /* Remove default margins and ensure canvas fills the viewport */
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #000;
-      overflow: hidden; /* Prevent scrollbars */
-    }
-    canvas {
-      display: block; /* Removes small gaps below inline elements */
-      width: 100%;
-      height: 100%;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>💝 For You 💝</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --pink: #ff6b9d;
+            --pink-dark: #e91e63;
+            --pink-light: #ffcdd2;
+            --rose: #f8bbd9;
+            --lavender: #e1bee7;
+            --peach: #ffccbc;
+            --cream: #fff8f0;
+            --gold: #ffd54f;
+            --white: #ffffff;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(180deg, #fff0f5 0%, #ffe4ec 50%, #fce4ec 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #5d4037;
+        }
+
+        /* ==================== LOADER ==================== */
+        .loader {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #fff0f5, #fce4ec);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .loader-hearts {
+            display: flex;
+            gap: 8px;
+        }
+
+        .loader-heart {
+            font-size: 2rem;
+            animation: loaderBounce 0.6s ease-in-out infinite;
+        }
+
+        .loader-heart:nth-child(2) { animation-delay: 0.1s; }
+        .loader-heart:nth-child(3) { animation-delay: 0.2s; }
+
+        @keyframes loaderBounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.1); }
+        }
+
+        .loader p {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            color: var(--pink);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* ==================== FLOATING ELEMENTS ==================== */
+        .floating-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .floater {
+            position: absolute;
+            animation: floatUp linear infinite;
+            opacity: 0;
+            font-size: 1.2rem;
+        }
+
+        @keyframes floatUp {
+            0% { 
+                transform: translateY(100vh) rotate(0deg) scale(0.5); 
+                opacity: 0; 
+            }
+            10% { opacity: 0.7; }
+            90% { opacity: 0.7; }
+            100% { 
+                transform: translateY(-100px) rotate(360deg) scale(1); 
+                opacity: 0; 
+            }
+        }
+
+        /* ==================== SPARKLE CURSOR ==================== */
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: sparkleFade 0.8s ease-out forwards;
+            z-index: 9999;
+        }
+
+        @keyframes sparkleFade {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: scale(0) rotate(180deg); opacity: 0; }
+        }
+
+        /* ==================== MAIN CONTAINER ==================== */
+        .container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ==================== PAGE SYSTEM ==================== */
+        .page {
+            display: none;
+            width: 100%;
+            max-width: 500px;
+            animation: pageIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes pageIn {
+            0% { 
+                opacity: 0; 
+                transform: translateY(40px) scale(0.95); 
+                filter: blur(10px);
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+                filter: blur(0);
+            }
+        }
+
+        /* ==================== CARDS ==================== */
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 35px 25px;
+            box-shadow: 
+                0 25px 50px -12px rgba(233, 30, 99, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* ==================== TYPOGRAPHY ==================== */
+        .title {
+            font-family: 'Pacifico', cursive;
+            font-size: clamp(2.2rem, 8vw, 3rem);
+            background: linear-gradient(135deg, var(--pink-dark), var(--pink), #ff8a80);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 10px;
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .subtitle {
+            font-family: 'Pacifico', cursive;
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            color: var(--pink);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .text {
+            font-size: 1.05rem;
+            line-height: 1.9;
+            color: #6d4c41;
+            text-align: center;
+        }
+
+        .highlight {
+            color: var(--pink-dark);
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--pink);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .highlight:hover::after {
+            transform: scaleX(1);
+        }
+
+        .highlight:active {
+            transform: scale(0.95);
+        }
+
+        /* ==================== ANIMATED INTRO TEXT ==================== */
+        .intro-container {
+            margin: 25px 0;
+            min-height: 80px;
+        }
+
+        .intro-line {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards;
+            font-size: 1.1rem;
+            line-height: 2;
+            text-align: center;
+        }
+
+        .intro-line:nth-child(1) { animation-delay: 0.5s; }
+        .intro-line:nth-child(2) { animation-delay: 1.2s; }
+        .intro-line:nth-child(3) { animation-delay: 1.9s; }
+
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ==================== SECRET TAPPABLE AREAS ==================== */
+        .secret {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            position: relative;
+        }
+
+        .secret:hover {
+            transform: scale(1.05);
+        }
+
+        .secret:active {
+            transform: scale(0.95);
+        }
+
+        .secret.found::after {
+            content: '✓';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 0.7rem;
+            background: var(--gold);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ==================== MOOD SELECTOR ==================== */
+        .mood-section {
+            margin-top: 35px;
+            text-align: center;
+        }
+
+        .mood-question {
+            font-size: 1.15rem;
+            color: #8d6e63;
+            margin-bottom: 25px;
+        }
+
+        .mood-grid {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .mood-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(145deg, #fff, #fce4ec);
+            box-shadow: 
+                5px 5px 15px rgba(233, 30, 99, 0.1),
+                -5px -5px 15px rgba(255, 255, 255, 0.8);
+            font-size: 1.6rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .mood-btn::after {
+            content: attr(data-label);
+            position: absolute;
+            bottom: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.65rem;
+            color: #8d6e63;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .mood-btn:hover, .mood-btn:focus {
+            transform: translateY(-8px) scale(1.1);
+            box-shadow: 
+                8px 8px 25px rgba(233, 30, 99, 0.2),
+                -5px -5px 15px rgba(255, 255, 255, 0.9);
+        }
+
+        .mood-btn:hover::after {
+            opacity: 1;
+        }
+
+        .mood-btn:active {
+            transform: translateY(-4px) scale(1.05);
+        }
+
+        /* ==================== HIDDEN MESSAGE POPUP ==================== */
+        .popup {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+
+        .popup.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .popup-content {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            max-width: 350px;
+            text-align: center;
+            transform: scale(0.8) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+        }
+
+        .popup.show .popup-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .popup-emoji {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .popup-title {
+            font-family: 'Pacifico', cursive;
+            font-size: 1.4rem;
+            color: var(--pink);
+            margin-bottom: 10px;
+        }
+
+        .popup-text {
+            color: #6d4c41;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .popup-btn {
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .popup-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(233, 30, 99, 0.3);
+        }
+
+        /* ==================== MOOD PAGE STYLES ==================== */
+        .mood-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .mood-emoji {
+            font-size: 4rem;
+            animation: float 3s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(-3deg); }
+            50% { transform: translateY(-15px) rotate(3deg); }
+        }
+
+        /* ==================== MESSAGE BUBBLES ==================== */
+        .bubble {
+            background: linear-gradient(135deg, #fff, #fce4ec);
+            padding: 18px 22px;
+            border-radius: 20px 20px 20px 4px;
+            margin: 15px 0;
+            box-shadow: 0 8px 25px rgba(233, 30, 99, 0.08);
+            position: relative;
+            animation: bubbleIn 0.6s ease backwards;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .bubble:nth-child(1) { animation-delay: 0.1s; }
+        .bubble:nth-child(2) { animation-delay: 0.3s; }
+        .bubble:nth-child(3) { animation-delay: 0.5s; }
+        .bubble:nth-child(4) { animation-delay: 0.7s; }
+
+        .bubble:hover {
+            transform: translateX(5px);
+            box-shadow: 0 12px 35px rgba(233, 30, 99, 0.12);
+        }
+
+        .bubble::before {
+            content: '💕';
+            position: absolute;
+            top: -10px;
+            left: 15px;
+            font-size: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: scale(0);
+        }
+
+        .bubble:hover::before {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .bubble p {
+            color: #5d4037;
+            line-height: 1.7;
+            font-size: 1rem;
+        }
+
+        .bubble strong {
+            color: var(--pink-dark);
+        }
+
+        @keyframes bubbleIn {
+            from { 
+                opacity: 0; 
+                transform: translateX(-30px) scale(0.9); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0) scale(1); 
+            }
+        }
+
+        /* ==================== MEDIA CONTAINERS ==================== */
+        .media-section {
+            margin: 25px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--rose), var(--lavender));
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .media-title {
+            font-size: 1rem;
+            color: #6d4c41;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        audio {
+            width: 100%;
+            border-radius: 30px;
+            margin-top: 10px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+
+        .video-wrapper iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* ==================== QUOTE SECTION ==================== */
+        .quote-box {
+            background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(252,228,236,0.8));
+            padding: 25px;
+            border-radius: 20px;
+            margin: 20px 0;
+            border-left: 4px solid var(--pink);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .quote-box:hover {
+            transform: scale(1.02);
+        }
+
+        .quote-box::before {
+            content: '"';
+            font-family: 'Pacifico', cursive;
+            font-size: 4rem;
+            color: var(--pink-light);
+            position: absolute;
+            top: 5px;
+            left: 15px;
+            line-height: 1;
+        }
+
+        .quote-text {
+            font-style: italic;
+            color: #6d4c41;
+            font-size: 1.05rem;
+            line-height: 1.8;
+            padding-left: 30px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* ==================== BUTTONS ==================== */
+        .btn {
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 50px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 8px 25px rgba(233, 30, 99, 0.3);
+            margin: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(233, 30, 99, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--pink);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            border: 2px solid var(--pink-light);
+        }
+
+        .btn-secondary:hover {
+            background: var(--pink-light);
+            box-shadow: 0 15px 35px rgba(233, 30, 99, 0.15);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        /* ==================== GALLERY ==================== */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            cursor: pointer;
+            transition: transform 0.4s ease;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.03);
+            z-index: 2;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(0deg, rgba(233,30,99,0.9) 0%, transparent 60%);
+            display: flex;
+            align-items: flex-end;
+            padding: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            opacity: 1;
+        }
+
+        .gallery-text {
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        /* ==================== CONFETTI ==================== */
+        .confetti-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9998;
+            overflow: hidden;
+        }
+
+        .confetti {
+            position: absolute;
+            animation: confettiFall linear forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { 
+                transform: translateY(-20px) rotate(0deg); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translateY(100vh) rotate(720deg); 
+                opacity: 0; 
+            }
+        }
+
+        /* ==================== HUG OVERLAY ==================== */
+        .hug-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,182,193,0.95), rgba(255,105,180,0.95));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s ease;
+        }
+
+        .hug-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .hug-emoji {
+            font-size: 6rem;
+            animation: hugPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes hugPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .hug-text {
+            font-family: 'Pacifico', cursive;
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
+            color: white;
+            margin-top: 20px;
+            text-align: center;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        /* ==================== FAB (FLOATING ACTION BUTTON) ==================== */
+        .fab {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(233, 30, 99, 0.4);
+            z-index: 100;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fab:hover {
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 12px 40px rgba(233, 30, 99, 0.5);
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* ==================== LOVE COUNTER ==================== */
+        .love-counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px 18px;
+            border-radius: 50px;
+            box-shadow: 0 8px 25px rgba(233, 30, 99, 0.15);
+            font-size: 0.9rem;
+            color: var(--pink);
+            font-weight: 700;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .love-counter:hover {
+            transform: scale(1.05);
+        }
+
+        .love-counter span:first-child {
+            animation: heartBeat 1.5s ease infinite;
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            15% { transform: scale(1.2); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.15); }
+            60% { transform: scale(1); }
+        }
+
+        /* ==================== SECRET COUNTER ==================== */
+        .secret-counter {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, var(--gold), #ffb300);
+            padding: 10px 18px;
+            border-radius: 50px;
+            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+            font-size: 0.85rem;
+            color: #5d4037;
+            font-weight: 700;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .secret-counter:hover {
+            transform: scale(1.05);
+        }
+
+        /* ==================== HINT TEXT ==================== */
+        .hint {
+            font-size: 0.85rem;
+            color: #a1887f;
+            text-align: center;
+            margin-top: 25px;
+            animation: fadeInUp 0.8s ease 2.5s backwards;
+        }
+
+        .hint-icon {
+            animation: wiggle 2s ease infinite;
+            display: inline-block;
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (min-width: 600px) {
+            .card {
+                padding: 45px 40px;
+            }
+
+            .mood-btn {
+                width: 64px;
+                height: 64px;
+                font-size: 1.8rem;
+            }
+
+            .gallery {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Rainbow gradient text */
+        .rainbow-text {
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff6b9d, #ff6b6b);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: rainbowMove 3s linear infinite;
+        }
+
+        @keyframes rainbowMove {
+            to { background-position: 200% center; }
+        }
+
+        /* Glow effect */
+        .glow {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 5px #fff, 0 0 10px var(--pink-light), 0 0 15px var(--pink); }
+            to { text-shadow: 0 0 10px #fff, 0 0 20px var(--pink-light), 0 0 30px var(--pink); }
+        }
+
+        /* Sparkle text */
+        .sparkle-text {
+            position: relative;
+            display: inline-block;
+        }
+
+        .sparkle-text::before,
+        .sparkle-text::after {
+            content: '✨';
+            position: absolute;
+            font-size: 0.7rem;
+            animation: sparkleFloat 2s ease infinite;
+        }
+
+        .sparkle-text::before {
+            top: -8px;
+            left: -12px;
+            animation-delay: 0.5s;
+        }
+
+        .sparkle-text::after {
+            top: -5px;
+            right: -12px;
+        }
+
+        @keyframes sparkleFloat {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 1; }
+            50% { transform: translateY(-5px) scale(1.2); opacity: 0.7; }
+        }
+
+        .tap-hint {
+            position: relative;
+        }
+
+        .tap-hint::after {
+            content: '👆';
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            opacity: 0;
+            animation: tapHint 3s ease infinite;
+        }
+
+        @keyframes tapHint {
+            0%, 70%, 100% { opacity: 0; transform: translateX(-50%) translateY(0); }
+            80%, 90% { opacity: 1; transform: translateX(-50%) translateY(-5px); }
+        }
+    </style>
 </head>
 <body>
-  <!-- Canvas used for the entire scene -->
-  <canvas id="scene"></canvas>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-hearts">
+            <div class="loader-heart">💖</div>
+            <div class="loader-heart">💗</div>
+            <div class="loader-heart">💕</div>
+        </div>
+        <p>Loading something special...</p>
+    </div>
 
-  <script>
-    // Grab canvas & context
-    const canvas = document.getElementById('scene');
-    const ctx = canvas.getContext('2d');
+    <!-- Floating Background Elements -->
+    <div class="floating-container" id="floatingContainer"></div>
 
-    let width, height;
-    let grassTufts = [];
-    let pathPebbles = [];
-    let moon = { x: 0, y: 0, r: 0, craters: [] }; // moon data
-    // Audio setup (replace the src with a valid file path or URL to Chaand Baliyan)
-    const song = new Audio('chaand_baliyan.mp3');
-    song.loop = true; // play continuously once started
+    <!-- Confetti Container -->
+    <div class="confetti-container" id="confettiContainer"></div>
 
-    // Canvas click toggles song when moon is clicked
-    canvas.addEventListener('click', (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
-      const cy = (e.clientY - rect.top)  * (canvas.height / rect.height);
-      const dist = Math.hypot(cx - moon.x, cy - moon.y);
-      if (dist <= moon.r) {
-        if (song.paused) song.play();
-        else song.pause();
-      }
-    });
+    <!-- Hug Overlay -->
+    <div class="hug-overlay" id="hugOverlay" onclick="closeHug()">
+        <div class="hug-emoji">🤗</div>
+        <p class="hug-text">Sending you the warmest hug ever! 💕</p>
+        <p style="color: white; margin-top: 30px; font-size: 0.9rem; opacity: 0.8;">tap anywhere to close</p>
+    </div>
 
-    function initHillDecor() {
-      const { hillTop, hillBottom } = layout;
-      const hillHeight = hillBottom - hillTop;
+    <!-- Popup Modal -->
+    <div class="popup" id="popup" onclick="closePopup()">
+        <div class="popup-content" onclick="event.stopPropagation()">
+            <div class="popup-emoji" id="popupEmoji">🌟</div>
+            <h3 class="popup-title" id="popupTitle">You found a secret!</h3>
+            <p class="popup-text" id="popupText">You're amazing at finding hidden treasures!</p>
+            <button class="popup-btn" onclick="closePopup()">Yay! 💕</button>
+        </div>
+    </div>
 
-      // Grass
-      grassTufts = [];
-      const tuftCount = Math.floor(width / 14);
-      for (let i = 0; i < tuftCount; i++) {
-        const x = Math.random() * width;
-        const y = hillTop + Math.random() * hillHeight * 0.6;
-        grassTufts.push({ x, y });
-      }
+    <!-- Counters -->
+    <div class="love-counter" id="loveCounter" onclick="showPopup('💝', 'So Much Love!', 'Every click is a little love sent your way!')">
+        <span>💖</span> <span id="loveCount">0</span>
+    </div>
 
-      // Pathway pebbles
-      pathPebbles = [];
-      const pathHeight = Math.max(6, hillHeight * 0.12);
-      const pathTop = hillTop + hillHeight * 0.4 - pathHeight / 2;
-      const pebbleCount = Math.floor(width / 60);
-      for (let i = 0; i < pebbleCount; i++) {
-        pathPebbles.push({
-          x: Math.random() * width,
-          y: pathTop + Math.random() * pathHeight,
-          r: Math.random() * 1.5 + 0.5
-        });
-      }
-    }
+    <div class="secret-counter" id="secretCounter">
+        <span>🔍</span> Secrets: <span id="secretCount">0</span>/12
+    </div>
 
-    let sandPattern;
+    <!-- FAB Button -->
+    <button class="fab" id="fab" onclick="sendHug()" title="Send a hug!">🤗</button>
 
-    function initSandTexture() {
-      // Create off-screen canvas for sand grain pattern
-      const size = 120; // px
-      const off = document.createElement('canvas');
-      off.width = off.height = size;
-      const ictx = off.getContext('2d');
+    <!-- Main Container -->
+    <div class="container">
+        
+        <!-- ==================== PAGE 1: LANDING ==================== -->
+        <div class="page active" id="page1">
+            <div class="card">
+                <h1 class="title">Hey Beautiful 💫</h1>
+                
+                <div class="intro-container">
+                    <p class="intro-line">I made this little corner of the internet</p>
+                    <p class="intro-line">just for <span class="sparkle-text">you</span> ✨</p>
+                    <p class="intro-line">Because you deserve to feel <span class="highlight secret" onclick="foundSecret(1, '💎', 'Hidden Gem!', 'Just like you - rare and precious!')">special</span> 💕</p>
+                </div>
 
-      // Base sand color
-      ictx.fillStyle = '#c7b386';
-      ictx.fillRect(0, 0, size, size);
+                <div style="margin: 30px 0;">
+                    <p class="text">
+                        <span class="secret" onclick="foundSecret(2, '🌟', 'Star Finder!', 'You shine brighter than all the stars combined!')">Sometimes</span> 
+                        life gets overwhelming. Sometimes people don't see how 
+                        <span class="highlight secret" onclick="foundSecret(3, '💪', 'Strength Found!', 'Your resilience is your superpower!')">incredible</span> 
+                        you truly are.
+                    </p>
+                    <p class="text" style="margin-top: 15px;">
+                        But I see you. I see your 
+                        <span class="secret" onclick="foundSecret(4, '🔥', 'Fire Within!', 'Your passion lights up everything around you!')">passion</span>, 
+                        your 
+                        <span class="secret" onclick="foundSecret(5, '💖', 'Pure Heart!', 'Your kindness makes the world better!')">kindness</span>, 
+                        and your 
+                        <span class="secret" onclick="foundSecret(6, '✨', 'Magic Discovered!', 'You bring magic wherever you go!')">magic</span>. 
+                        ✨
+                    </p>
+                </div>
 
-      // Add noisy grains
-      const grainCount = 700;
-      for (let i = 0; i < grainCount; i++) {
-        const x = Math.random() * size;
-        const y = Math.random() * size;
-        const r = Math.random() * 1.2 + 0.3;
-        // Alternate between lighter and darker specks
-        ictx.fillStyle = Math.random() > 0.5 ? 'rgba(232,221,186,0.55)' : 'rgba(139,118,87,0.55)';
-        ictx.beginPath();
-        ictx.arc(x, y, r, 0, Math.PI * 2);
-        ictx.fill();
-      }
+                <div class="mood-section">
+                    <p class="mood-question">So tell me... how's your heart today? 💭</p>
+                    
+                    <div class="mood-grid">
+                        <button class="mood-btn" data-label="Rough day" onclick="selectMood('sad')">🥺</button>
+                        <button class="mood-btn" data-label="Meh" onclick="selectMood('meh')">😔</button>
+                        <button class="mood-btn" data-label="Okay" onclick="selectMood('okay')">🙂</button>
+                        <button class="mood-btn" data-label="Good!" onclick="selectMood('good')">😊</button>
+                        <button class="mood-btn" data-label="Amazing!" onclick="selectMood('great')">🥰</button>
+                    </div>
+                </div>
 
-      sandPattern = ctx.createPattern(off, 'repeat');
-    }
+                <p class="hint">
+                    <span class="hint-icon">💡</span> 
+                    Psst... tap the 
+                    <span class="secret tap-hint" onclick="foundSecret(7, '🎁', 'Curious One!', 'Your curiosity is adorable!')">colorful words</span>
+                    for surprises!
+                </p>
+            </div>
+        </div>
 
-    let sandEdgePoints = [];
-    function initSandEdge() {
-      const { sandTop } = layout;
-      sandEdgePoints = [];
-      const step = 80; // px between control points
-      const amp = Math.max(8, height * 0.02); // amplitude of irregularity
-      for (let x = 0; x <= width; x += step) {
-        const y = sandTop + (Math.random() - 0.5) * amp;
-        sandEdgePoints.push({ x, y });
-      }
-      // ensure last point at width
-      if (sandEdgePoints[sandEdgePoints.length - 1].x < width) {
-        sandEdgePoints.push({ x: width, y: sandTop + (Math.random() - 0.5) * amp });
-      }
-    }
+        <!-- ==================== PAGE: SAD MOOD ==================== -->
+        <div class="page" id="pageSad">
+            <div class="card">
+                <div class="mood-header">
+                    <div class="mood-emoji">🫂</div>
+                    <h2 class="subtitle">Come here, you 💕</h2>
+                </div>
 
-    function resize() {
-      width  = canvas.width  = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-      updateLayout();
-      initSandTexture(); // generate new pattern for current resolution
-      initSandEdge();
-      initHillDecor();
-      initMoon();
-      initStars();
-      initClouds();
-    }
-    window.addEventListener('resize', resize);
+                <div class="bubble" onclick="foundSecret(8, '💝', 'Bubble Tapper!', 'Every bubble holds a piece of my heart for you!')">
+                    <p>I know today feels heavy. I know everything seems like too much right now. But listen to me... 💕</p>
+                </div>
 
-    /* ---------------------------
-       STAR SETUP (Twinkling)
-    --------------------------- */
-    const STAR_COUNT = 160;
-    let stars = [];
+                <div class="bubble">
+                    <p><strong>You are NOT what they make you feel.</strong> You are not incompetent. You are not "too much." You are not helpless. 🌟</p>
+                </div>
 
-    class Star {
-      constructor() { this.reset(); }
-      reset() {
-        this.x = Math.random() * width;
-        this.y = Math.random() * layout.skyBottom; // only in the sky region
-        this.r = Math.random() * 1.8 + 0.2;   // radius
-        this.baseAlpha = Math.random() * 0.6 + 0.2;
-        this.alphaRange = Math.random() * 0.4 + 0.2;
-        this.speed = Math.random() * 0.002 + 0.001; // twinkle speed
-        this.phase = Math.random() * Math.PI * 2;
-      }
-      update(t) {
-        // Simple sine-wave based twinkle
-        this.alpha = this.baseAlpha + Math.sin(t * this.speed + this.phase) * this.alphaRange;
-      }
-      draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${this.alpha})`;
-        ctx.fill();
-      }
-    }
+                <div class="bubble">
+                    <p>You travel <strong>3 hours every single day</strong> because you care THAT much. That's not weakness — that's <span class="highlight secret" onclick="foundSecret(9, '🦸‍♀️', 'Hero Energy!', 'You have the heart of a warrior!')">warrior energy</span>. 💪</p>
+                </div>
 
-    function initStars() {
-      stars = Array.from({ length: STAR_COUNT }, () => new Star());
-    }
+                <div class="bubble">
+                    <p>You practice before class even starts. You take extra courses. You go above and beyond. That's not "just okay" — that's <span class="rainbow-text">extraordinary</span>. ✨</p>
+                </div>
 
-    /* ---------------------------
-       CLOUD SETUP (Drifting)
-    --------------------------- */
-    const CLOUD_COUNT = 7;
-    let clouds = [];
+                <div class="media-section">
+                    <p class="media-title">🎙️ I recorded this just for you...</p>
+                    <!-- REPLACE: voice note path -->
+                    <audio controls>
+                        <source src="voice-notes/comfort.mp3" type="audio/mpeg">
+                    </audio>
+                </div>
 
-    class Cloud {
-      constructor() { this.reset(); }
-      reset() {
-        this.scale  = Math.random() * 0.5 + 0.5; // relative size
-        this.x      = Math.random() * width;
-        // Clouds float inside sky region (upper 60% of sky band)
-        const skyBand = layout.skyBottom;
-        this.y      = Math.random() * layout.skyBottom * 0.3 + layout.skyBottom * 0.55; // cluster nearer horizon
-        this.speed  = (Math.random() * 0.15 + 0.05) * this.scale; // consistent visual speed
-        this.opacity = Math.random() * 0.25 + 0.15;
-      }
-      update(delta) {
-        this.x += this.speed * delta * 0.05; // convert ms delta to px movement
-        if (this.x - 250 * this.scale > width) {
-          // Recycle cloud to the left once it exits right side
-          this.x = -250 * this.scale;
-          this.y = Math.random() * layout.skyBottom * 0.3 + layout.skyBottom * 0.55; // cluster nearer horizon
+                <div class="media-section">
+                    <p class="media-title">📹 Watch this when you're ready</p>
+                    <div class="video-wrapper">
+                        <!-- REPLACE: YouTube video ID -->
+                        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" allowfullscreen></iframe>
+                    </div>
+                </div>
+
+                <div class="quote-box" onclick="cycleQuote('sad')">
+                    <p class="quote-text" id="sadQuote">You've survived 100% of your worst days. That's an incredible track record. 💕</p>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn" onclick="launchConfetti(); cycleQuote('sad')">✨ Another message</button>
+                    <button class="btn" onclick="sendHug()">🤗 Need a hug</button>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-secondary btn" onclick="goToPage('pageGallery')">Why you're amazing →</button>
+                    <button class="btn-secondary btn" onclick="goToPage('page1')">← Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAGE: MEH MOOD ==================== -->
+        <div class="page" id="pageMeh">
+            <div class="card">
+                <div class="mood-header">
+                    <div class="mood-emoji">☁️</div>
+                    <h2 class="subtitle">I see you 💭</h2>
+                </div>
+
+                <div class="bubble">
+                    <p>Not every day needs to be sunshine and rainbows. Some days are just... cloudy. And that's okay. 🌥️</p>
+                </div>
+
+                <div class="bubble" onclick="foundSecret(10, '🌈', 'Rainbow Hunter!', 'After every cloud comes a rainbow!')">
+                    <p>But even on cloudy days, the sun is still there. Just like your <strong>brilliance</strong> is still there, even when you can't see it. ✨</p>
+                </div>
+
+                <div class="bubble">
+                    <p>You showed up today. You're here. You're trying. That <span class="highlight">counts for something</span>. Actually, it counts for everything. 💕</p>
+                </div>
+
+                <div class="media-section">
+                    <p class="media-title">🎙️ A little voice note for you...</p>
+                    <audio controls>
+                        <source src="voice-notes/meh-day.mp3" type="audio/mpeg">
+                    </audio>
+                </div>
+
+                <div class="media-section">
+                    <p class="media-title">📹 Maybe this will help</p>
+                    <div class="video-wrapper">
+                        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" allowfullscreen></iframe>
+                    </div>
+                </div>
+
+                <div class="quote-box" onclick="cycleQuote('meh')">
+                    <p class="quote-text" id="mehQuote">Even on your 'meh' days, you're still someone's reason to smile. 💕</p>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn" onclick="launchConfetti(); cycleQuote('meh')">✨ More good vibes</button>
+                    <button class="btn" onclick="sendHug()">🤗 Virtual hug</button>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-secondary btn" onclick="goToPage('pageGallery')">Why you're amazing →</button>
+                    <button class="btn-secondary btn" onclick="goToPage('page1')">← Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAGE: OKAY MOOD ==================== -->
+        <div class="page" id="pageOkay">
+            <div class="card">
+                <div class="mood-header">
+                    <div class="mood-emoji">🌤️</div>
+                    <h2 class="subtitle">Hello sunshine! ☀️</h2>
+                </div>
+
+                <div class="bubble">
+                    <p>"Okay" is underrated! Okay means you're getting through. Okay means you're still standing. 💪</p>
+                </div>
+
+                <div class="bubble">
+                    <p>And you know what? From okay to amazing is just a few moments away. Especially for someone as <span class="highlight secret" onclick="foundSecret(11, '⭐', 'Star Quality!', 'You have main character energy!')">incredible</span> as you. ✨</p>
+                </div>
+
+                <div class="media-section">
+                    <p class="media-title">🎙️ Something for you...</p>
+                    <audio controls>
+                        <source src="voice-notes/okay-day.mp3" type="audio/mpeg">
+                    </audio>
+                </div>
+
+                <div class="media-section">
+                    <p class="media-title">📹 A little pick-me-up</p>
+                    <div class="video-wrapper">
+                        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" allowfullscreen></iframe>
+                    </div>
+                </div>
+
+                <div class="quote-box" onclick="cycleQuote('okay')">
+                    <p class="quote-text" id="okayQuote">Consistency beats intensity. Your 'okay' days are building something amazing. 🌟</p>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn" onclick="launchConfetti(); cycleQuote('okay')">✨ More positivity</button>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-secondary btn" onclick="goToPage('pageGallery')">Why you're amazing →</button>
+                    <button class="btn-secondary btn" onclick="goToPage('page1')">← Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAGE: GOOD MOOD ==================== -->
+        <div class="page" id="pageGood">
+            <div class="card">
+                <div class="mood-header">
+                    <div class="mood-emoji">🌸</div>
+                    <h2 class="subtitle rainbow-text">Yay! That's wonderful!</h2>
+                </div>
+
+                <div class="bubble">
+                    <p>Your smile just made MY day better! Seeing you happy is the best feeling ever. 🥰</p>
+                </div>
+
+                <div class="bubble">
+                    <p>You deserve all the good days. Every single one. Your hard work, your kindness, your beautiful soul — it all deserves <strong>happiness</strong>. ✨</p>
+                </div>
+
+                <div class="media-section">
+                    <p class="media-title">🎙️ A happy message for you!</p>
+                    <audio controls>
+                        <source src="voice-notes/happy.mp3" type="audio/mpeg">
+                    </audio>
+                </div>
+
+                <div class="media-section">
+                    <p class="media-title">📹 Let's celebrate!</p>
+                    <div class="video-wrapper">
+                        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" allowfullscreen></iframe>
+                    </div>
+                </div>
+
+                <div class="quote-box" onclick="cycleQuote('good')">
+                    <p class="quote-text" id="goodQuote">Your happiness is contagious! Keep spreading that sunshine! ☀️</p>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn" onclick="megaConfetti()">🎉 Party time!</button>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-secondary btn" onclick="goToPage('pageGallery')">Why you're amazing →</button>
+                    <button class="btn-secondary btn" onclick="goToPage('page1')">← Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAGE: GREAT MOOD ==================== -->
+        <div class="page" id="pageGreat">
+            <div class="card">
+                <div class="mood-header">
+                    <div class="mood-emoji">🥳</div>
+                    <h2 class="subtitle rainbow-text">YESSS! I LOVE THIS!</h2>
+                </div>
+
+                <div class="bubble">
+                    <p>THIS IS THE ENERGY! 🔥 Your happiness is literally making my whole day! 💕</p>
+                </div>
+
+                <div class="bubble">
+                    <p>Remember this feeling, okay? This is the REAL you — the one underneath all the stress and worry. <span class="rainbow-text">Unstoppable. Radiant. Amazing.</span> ✨</p>
+                </div>
+
+                <div class="media-section">
+                    <p class="media-title">🎙️ A celebration message!</p>
+                    <audio controls>
+                        <source src="voice-notes/celebration.mp3" type="audio/mpeg">
+                    </audio>
+                </div>
+
+                <div class="media-section">
+                    <p class="media-title">📹 Let's party together!</p>
+                    <div class="video-wrapper">
+                        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" allowfullscreen></iframe>
+                    </div>
+                </div>
+
+                <div class="quote-box" onclick="cycleQuote('great')">
+                    <p class="quote-text" id="greatQuote">You're not just a star — you're the whole galaxy! 🌌✨</p>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn" onclick="megaConfetti()">🎉🎉 MEGA PARTY! 🎉🎉</button>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-secondary btn" onclick="goToPage('pageGallery')">Why you're amazing →</button>
+                    <button class="btn-secondary btn" onclick="goToPage('page1')">← Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAGE: GALLERY ==================== -->
+        <div class="page" id="pageGallery">
+            <div class="card">
+                <h2 class="subtitle">Why You're <span class="rainbow-text">Amazing</span> 💕</h2>
+                
+                <p class="text" style="margin-bottom: 20px;">Tap each photo to reveal a truth about you ✨</p>
+
+                <div class="gallery">
+                    <!-- REPLACE: Add your image paths -->
+                    <div class="gallery-item" onclick="incrementLove()">
+                        <img src="images/photo1.jpg" alt="" onerror="this.src='https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=300&h=300&fit=crop'">
+                        <div class="gallery-overlay">
+                            <p class="gallery-text">3-hour daily commute? That's DEDICATION. 💪</p>
+                        </div>
+                    </div>
+                    <div class="gallery-item" onclick="incrementLove()">
+                        <img src="images/photo2.jpg" alt="" onerror="this.src='https://images.unsplash.com/photo-1544027993-37dbfe43562a?w=300&h=300&fit=crop'">
+                        <div class="gallery-overlay">
+                            <p class="gallery-text">Extra classes? Boss energy! 📚✨</p>
+                        </div>
+                    </div>
+                    <div class="gallery-item" onclick="incrementLove()">
+                        <img src="images/photo3.jpg" alt="" onerror="this.src='https://images.unsplash.com/photo-1516585427167-9f4af9627e6c?w=300&h=300&fit=crop'">
+                        <div class="gallery-overlay">
+                            <p class="gallery-text">Your patients are SO lucky! 🦷💕</p>
+                        </div>
+                    </div>
+                    <div class="gallery-item" onclick="incrementLove()">
+                        <img src="images/photo4.jpg" alt="" onerror="this.src='https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=300&h=300&fit=crop'">
+                        <div class="gallery-overlay">
+                            <p class="gallery-text">Practicing before class = LEGEND status! 🌟</p>
+                        </div>
+                    </div>
+                    <div class="gallery-item" onclick="foundSecret(12, '👑', 'Gallery Explorer!', 'You found the last gallery secret!')">
+                        <img src="images/photo5.jpg" alt="" onerror="this.src='https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop'">
+                        <div class="gallery-overlay">
+                            <p class="gallery-text">You inspire everyone! 👑✨</p>
+                        </div>
+                    </div>
+                    <div class="gallery-item" onclick="incrementLove()">
+                        <img src="images/photo6.jpg" alt="" onerror="this.src='https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=300&h=300&fit=crop'">
+                        <div class="gallery-overlay">
+                            <p class="gallery-text">Pure sunshine in human form! ☀️</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bubble" style="margin-top: 25px; text-align: center;">
+                    <p>Those seniors who don't appreciate you? They probably see how amazing you are and it intimidates them. <strong>Your light doesn't dim because someone else can't see it.</strong> 💕</p>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn" onclick="launchConfetti()">✨ Confetti break!</button>
+                    <button class="btn-secondary btn" onclick="goToPage('pageFinal')">One last thing →</button>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-secondary btn" onclick="goToPage('page1')">← Start over</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAGE: FINAL ==================== -->
+        <div class="page" id="pageFinal">
+            <div class="card">
+                <h2 class="subtitle glow">Before you go... 💕</h2>
+
+                <div class="bubble" style="text-align: center;">
+                    <p>I want you to <span class="highlight">promise</span> me something...</p>
+                </div>
+
+                <div style="margin: 25px 0; line-height: 2.2; text-align: center;" class="text">
+                    <p>Promise me that on the hard days, you'll come back here. 💕</p>
+                    <p style="margin-top: 15px;">Promise me you'll remember that someone cares about you <strong>so much</strong> that they made you an entire website. 🌐</p>
+                    <p style="margin-top: 15px;">Promise me you'll NEVER call yourself incompetent again. Because you? You're a <span class="rainbow-text" style="font-weight: 800; font-size: 1.2rem;">SUPERSTAR</span>. ⭐</p>
+                    <p style="margin-top: 15px;">And promise me you'll reach out when things get heavy. You're never a burden. You're a <strong>gift</strong>. 🎁</p>
+                </div>
+
+                <div class="media-section">
+                    <p class="media-title">🎙️ One final message...</p>
+                    <audio controls>
+                        <source src="voice-notes/final.mp3" type="audio/mpeg">
+                    </audio>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn" onclick="megaConfetti(); sendHug()">💝 I promise! 💝</button>
+                </div>
+
+                <p class="hint" style="margin-top: 30px;">
+                    The 🤗 button is always here for you.<br>
+                    You're loved. Always. Forever. 💕
+                </p>
+
+                <div class="btn-group">
+                    <button class="btn-secondary btn" onclick="goToPage('page1')">← Visit again</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ==================== CONFIGURATION ====================
+        const quotes = {
+            sad: [
+                "You've survived 100% of your worst days. That's an incredible track record. 💕",
+                "Your worth isn't measured by someone else's inability to see it. ✨",
+                "Tough times don't last. Tough people like YOU do. 💪",
+                "The storm will pass. And you'll dance in the sunshine again. 🌈",
+                "Being overwhelmed doesn't mean you're weak. It means you've been strong for too long. 💕",
+                "You're not falling behind. You're on your own beautiful path. 🌟",
+                "Hey, it's okay to have a bad day. Tomorrow is waiting with open arms. 🌅"
+            ],
+            meh: [
+                "Even on your 'meh' days, you're still someone's reason to smile. 💕",
+                "Plot twist: 'meh' days are secretly rest days in disguise. 😴✨",
+                "You're allowed to just exist sometimes. No productivity required. 💖",
+                "A meh day is just a pause before your next great moment. ⏸️",
+                "Some flowers bloom late. And they're just as beautiful. 🌸"
+            ],
+            okay: [
+                "Consistency beats intensity. Your 'okay' days are building something amazing. 🌟",
+                "From okay to amazing is just a few moments away for someone like you! ✨",
+                "An okay day with good intentions is still a WIN. 🏆",
+                "You showed up. That's more than most. Be proud. 💕"
+            ],
+            good: [
+                "Your happiness is contagious! Keep spreading that sunshine! ☀️",
+                "Good days suit you! Your smile could light up cities. 💡✨",
+                "This energy? This is the REAL you. Remember this feeling! 🌟",
+                "You deserve every moment of happiness. Every single one. 💕"
+            ],
+            great: [
+                "You're not just a star — you're the whole galaxy! 🌌✨",
+                "THIS IS THE ENERGY! Let's bottle it for the tough days! 🍾💕",
+                "Your joy is literally making MY day better right now! 🥰",
+                "Unstoppable! Unbreakable! AMAZING! That's you! 🔥✨"
+            ]
+        };
+
+        let loveCount = 0;
+        let secretsFound = new Set();
+        let quoteIndexes = { sad: 0, meh: 0, okay: 0, good: 0, great: 0 };
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        function initApp() {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 1500);
+            
+            createFloaters();
+            setupSparkles();
+            setupClickEffects();
         }
-      }
-      draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.scale(this.scale, this.scale);
-        ctx.globalAlpha = this.opacity;
-        drawCloudShape();
-        ctx.restore();
-      }
-    }
 
-    // Helper to draw a cloud from overlapping circles
-    function drawCloudShape() {
-      const r = 40; // base radius
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(-r, 0, r, Math.PI * 0.5, Math.PI * 1.5);
-      ctx.arc(0, -r * 0.6, r * 1.2, Math.PI, 0);
-      ctx.arc(r * 1.3, 0, r * 0.9, Math.PI * 1.5, Math.PI * 0.5);
-      ctx.closePath();
-      ctx.fill();
-    }
+        // Backup loader hide
+        setTimeout(() => {
+            const loader = document.getElementById('loader');
+            if (loader) loader.classList.add('hidden');
+        }, 3000);
 
-    function initClouds() {
-      clouds = Array.from({ length: CLOUD_COUNT }, () => new Cloud());
-    }
-
-    // === NEW LAYER CONSTANTS (TOP-DOWN VIEW) ===
-    // --- adjust band percentages for viewpoint perspective ---
-    const HILL_PERC  = 0.0;  // no hill band
-    const SAND_PERC  = 0.08; // beach at the bottom
-    const WATER_PERC = 0.22; // above sand
-    // Sky gets the remaining ~70%
-
-    // === NEW LAYOUT CALCULATION OBJECT ===
-    let layout = {};
-
-    function updateLayout() {
-      const hillHeight  = height * HILL_PERC;
-      const sandHeight  = height * SAND_PERC;
-      const waterHeight = height * WATER_PERC;
-
-      const skyHeight   = Math.max(0, height - (hillHeight + sandHeight + waterHeight));
-
-      layout = {
-        skyTop: 0,
-        skyBottom: skyHeight,
-        waterTop: skyHeight,
-        waterBottom: skyHeight + waterHeight,
-        sandTop: skyHeight + waterHeight,
-        sandBottom: skyHeight + waterHeight + sandHeight,
-        hillTop: height - hillHeight, // top of hill band
-        hillBottom: height
-      };
-    }
-
-    function initMoon() {
-      const skyHeight = layout.skyBottom;
-      moon.r = Math.min(width, height) * 0.07;
-      moon.x = width - moon.r * 1.4;
-      moon.y = moon.r * 1.4; // within sky band top
-
-      // Generate crater positions (fixed per resize)
-      moon.craters = [];
-      const craterCount = 8;
-      for (let i = 0; i < craterCount; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = Math.random() * moon.r * 0.5;
-        const cx = moon.x + Math.cos(angle) * dist;
-        const cy = moon.y + Math.sin(angle) * dist;
-        const cr = moon.r * (Math.random() * 0.08 + 0.04);
-        moon.craters.push({ cx, cy, cr });
-      }
-    }
-
-    /* ---------------------------
-       ANIMATION LOOP
-    --------------------------- */
-    let lastTime = 0;
-    function animate(time = 0) {
-      const delta = time - lastTime;
-      lastTime = time;
-
-      // Clear entire canvas
-      ctx.clearRect(0, 0, width, height);
-
-      drawSky(time, delta);  // topmost layer
-      drawWater(time);       // below sky
-      drawSand();            // beach strip
-      // drawHill();  // hill removed
-      drawMessage(time); // overlay animated text
-
-      requestAnimationFrame(animate);
-    }
-    // Right before starting the animation loop, ensure we size & initialize once
-    resize();
-    requestAnimationFrame(animate);
-
-    /* ---------------------------
-       DRAWING LAYERS
-    --------------------------- */
-    function drawSky(t, delta) {
-      const { skyTop, skyBottom } = layout;
-      const skyHeight = skyBottom - skyTop;
-
-      // Sky gradient
-      const skyGrad = ctx.createLinearGradient(0, skyTop, 0, skyBottom);
-      skyGrad.addColorStop(0, '#020b1f');
-      skyGrad.addColorStop(1, '#023055');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, skyTop, width, skyHeight);
-
-      // Stars
-      stars.forEach(s => { s.update(t); s.draw(); });
-
-      // --- Moon rendering ---
-      // 1. Disc
-      ctx.fillStyle = '#fff9e8';
-      ctx.beginPath();
-      ctx.arc(moon.x, moon.y, moon.r, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 2. Craters
-      ctx.fillStyle = 'rgba(210,210,210,0.35)';
-      moon.craters.forEach(({ cx, cy, cr }) => {
-        ctx.beginPath();
-        ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // 3. Outer glow
-      const glowGrad = ctx.createRadialGradient(
-        moon.x,
-        moon.y,
-        moon.r,
-        moon.x,
-        moon.y,
-        moon.r * 1.8
-      );
-      glowGrad.addColorStop(0, 'rgba(255,255,240,0.45)');
-      glowGrad.addColorStop(1, 'rgba(255,255,240,0)');
-      ctx.fillStyle = glowGrad;
-      ctx.beginPath();
-      ctx.arc(moon.x, moon.y, moon.r * 1.8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Clouds drifting in front of moon
-      clouds.forEach(c => { c.update(delta); c.draw(); });
-    }
-
-    function drawWater(t) {
-      const { waterTop, waterBottom } = layout;
-      const waterHeight = waterBottom - waterTop;
-
-      ctx.fillStyle = '#033d6a';
-      ctx.fillRect(0, waterTop, width, waterHeight);
-
-      const waveHeight = waterHeight * 0.05;
-      const waveLength = width / 18;
-      const baseSpeed = 0.0008;
-      const rowSpacing = 28; // increased spacing for fewer rows
-      const rows = Math.floor(waterHeight / rowSpacing);
-
-      ctx.lineWidth = 1.1;
-      for (let r = 0; r < rows; r++) {
-        const yRow = waterTop + r * rowSpacing;
-        const speed = baseSpeed * (1 + r * 0.04); // slightly faster lower rows
-        const xOffset = (t * speed) % waveLength;
-        const amp = waveHeight * 0.3 * (1 - r / rows); // smaller amplitude further away (top)
-        ctx.strokeStyle = 'rgba(255,255,255,0.20)';
-
-        ctx.beginPath();
-        for (let x = -xOffset; x <= width + waveLength; x += 10) {
-          const y = yRow + Math.sin((x + xOffset) / waveLength * Math.PI * 2) * amp;
-          if (x === -xOffset) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+        // ==================== FLOATING BACKGROUND ====================
+        function createFloaters() {
+            const container = document.getElementById('floatingContainer');
+            const items = ['💕', '💖', '💗', '✨', '⭐', '🌟', '💫', '🦋', '🌸', '💝', '♥️', '💜'];
+            
+            for (let i = 0; i < 20; i++) {
+                const floater = document.createElement('div');
+                floater.className = 'floater';
+                floater.textContent = items[Math.floor(Math.random() * items.length)];
+                floater.style.left = Math.random() * 100 + '%';
+                floater.style.animationDuration = (8 + Math.random() * 8) + 's';
+                floater.style.animationDelay = Math.random() * 10 + 's';
+                floater.style.fontSize = (0.8 + Math.random() * 0.8) + 'rem';
+                container.appendChild(floater);
+            }
         }
-        ctx.stroke();
-      }
-    }
 
-    function drawSand() {
-      const { sandBottom } = layout;
-      ctx.fillStyle = sandPattern;
+        // ==================== SPARKLE CURSOR ====================
+        function setupSparkles() {
+            let lastSparkle = 0;
+            document.addEventListener('mousemove', (e) => {
+                if (Date.now() - lastSparkle > 50 && Math.random() > 0.7) {
+                    createSparkle(e.clientX, e.clientY);
+                    lastSparkle = Date.now();
+                }
+            });
 
-      ctx.beginPath();
-      // move to first edge point top
-      if (sandEdgePoints.length) {
-        ctx.moveTo(sandEdgePoints[0].x, sandEdgePoints[0].y);
-        // use quadratic curves between points for smoother shoreline
-        for (let i = 1; i < sandEdgePoints.length; i++) {
-          const prev = sandEdgePoints[i - 1];
-          const curr = sandEdgePoints[i];
-          const midX = (prev.x + curr.x) / 2;
-          const midY = (prev.y + curr.y) / 2;
-          ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
+            document.addEventListener('touchmove', (e) => {
+                if (Date.now() - lastSparkle > 100) {
+                    const touch = e.touches[0];
+                    createSparkle(touch.clientX, touch.clientY);
+                    lastSparkle = Date.now();
+                }
+            });
         }
-        // connect last point directly
-        const last = sandEdgePoints[sandEdgePoints.length - 1];
-        ctx.lineTo(last.x, last.y);
-      }
-      // draw remaining rectangle down to bottom
-      ctx.lineTo(width, sandBottom);
-      ctx.lineTo(0, sandBottom);
-      ctx.closePath();
-      ctx.fill();
-    }
 
-    function drawHill() {
-      const { hillTop, hillBottom } = layout;
-      const hillHeight = hillBottom - hillTop;
-
-      // Ground fill (grass base)
-      ctx.fillStyle = '#0d310d';
-      ctx.fillRect(0, hillTop, width, hillHeight);
-
-      // Pathway (muddy track)
-      const pathHeight = Math.max(6, hillHeight * 0.12);
-      const pathTop = hillTop + hillHeight * 0.4 - pathHeight / 2;
-      ctx.fillStyle = '#7a6544';
-      ctx.fillRect(0, pathTop, width, pathHeight);
-
-      // Pebbles on the path
-      ctx.fillStyle = '#a9a9a9';
-      pathPebbles.forEach(({ x, y, r }) => {
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // Grass tufts (drawn after path to slightly overlap edges)
-      ctx.strokeStyle = '#167a16';
-      ctx.lineWidth = 1;
-      grassTufts.forEach(({ x, y }) => {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y - 6 - Math.random() * 4);
-        ctx.stroke();
-      });
-
-      // Bench
-      const benchWidth  = Math.min(160, width * 0.18);
-      const benchHeight = 10;
-      const benchX = width * 0.5 - benchWidth / 2;
-      const benchY = hillTop + hillHeight * 0.55;
-
-      ctx.fillStyle = '#6b4423';
-      ctx.fillRect(benchX, benchY, benchWidth, benchHeight);
-      ctx.fillRect(benchX + benchWidth * 0.1, benchY + benchHeight, benchWidth * 0.08, benchHeight * 1.8);
-      ctx.fillRect(benchX + benchWidth * 0.82, benchY + benchHeight, benchWidth * 0.08, benchHeight * 1.8);
-    }
-
-    // Proposal letter (multi-paragraph; edit as desired — separate paragraphs with blank lines)
-    const MESSAGE_TEXT = [
-      "Meri Pyaari Gunnu,",
-      "Yep- I did call you meri. I wanted to call you mine the very day when you rested on my shoulder.",
-      "I promise to be there for you, during the times you need me- I want to be your support. your greatest cheerleader, your greatest friend, your greatest partner.",
-      "Even when you don't need me, I'll still be there annoying you with my borderline umm.. racist jokes?",
-      "I really love spending time with you. I admire every single thing about you- your heart warming chuckles, your adorable telugu, your sweetest smile, the way you put your hair behind your ears, the list just goes on and on.",
-      "",
-    ].join("\n\n");
-
-    const TYPE_SPEED = 35; // ms per character
-    let textStartTime = performance.now();
-
-    function drawMessage(now) {
-      const { skyTop, skyBottom } = layout;
-      const yStart = skyTop + (skyBottom - skyTop) * 0.15; // vertical position
-
-      ctx.save();
-
-      const BASE_FONT_PCT = 0.024; // starting font size as fraction of width
-      const MIN_FONT_PCT  = 0.015; // lower bound
-
-      let fontSize = width * BASE_FONT_PCT;
-      const fontFamily = "'Dancing Script', cursive";
-
-      // helper to set font on ctx
-      const setFont = () => { ctx.font = `${fontSize}px ${fontFamily}`; };
-      setFont();
-
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillStyle = '#ffd6e7'; // soft romantic pink
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 4;
-
-      const elapsed = now - textStartTime;
-      const charsToShow = Math.min(MESSAGE_TEXT.length, Math.floor(elapsed / TYPE_SPEED));
-      const visibleText = MESSAGE_TEXT.slice(0, charsToShow);
-
-      // Utility: word-wrap text to fit max width
-      function wrapText(ctx, text, maxWidth) {
-        const words = text.split(/\s+/);
-        const lines = [];
-        let current = "";
-        words.forEach(word => {
-          const testLine = current ? current + " " + word : word;
-          const { width: w } = ctx.measureText(testLine);
-          if (w > maxWidth && current) {
-            lines.push(current);
-            current = word;
-          } else {
-            current = testLine;
-          }
-        });
-        if (current) lines.push(current);
-        return lines;
-      }
-
-      const paragraphs = visibleText.split("\n");
-
-      const maxTextWidth = width * 0.8;
-
-      let wrappedLines;
-      let lineHeight;
-      let availableHeight = height - yStart - 20; // leave small bottom margin
-
-      // Recompute wrapping and scale font down until fits vertically or min reached
-      while (true) {
-        lineHeight = fontSize * 1.4;
-        wrappedLines = [];
-        paragraphs.forEach(p => {
-          if (p.trim() === "") {
-            wrappedLines.push("\u200B");
-            return;
-          }
-          wrapText(ctx, p, maxTextWidth).forEach(l => wrappedLines.push(l));
-        });
-
-        const neededHeight = wrappedLines.length * lineHeight;
-        if (neededHeight <= availableHeight || fontSize <= width * MIN_FONT_PCT) {
-          break;
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = y + 'px';
+            sparkle.style.width = (5 + Math.random() * 8) + 'px';
+            sparkle.style.height = sparkle.style.width;
+            sparkle.style.background = ['#ff6b9d', '#e91e63', '#ffc2d1', '#ffd54f', '#e1bee7'][Math.floor(Math.random() * 5)];
+            document.body.appendChild(sparkle);
+            setTimeout(() => sparkle.remove(), 800);
         }
-        // decrease font and re-evaluate
-        fontSize *= 0.9;
-        setFont();
-      }
 
-      let lineY = yStart;
-      wrappedLines.forEach(line => {
-        if (line === "\u200B") {
-          lineY += lineHeight; // blank line spacer
-        } else {
-          ctx.fillText(line, width / 2, lineY);
-          lineY += lineHeight;
+        // ==================== CLICK EFFECTS ====================
+        function setupClickEffects() {
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('button, audio, iframe, a')) {
+                    createClickEffect(e.clientX, e.clientY);
+                    incrementLove();
+                }
+            });
         }
-      });
-      ctx.restore();
-    }
-  </script>
+
+        function createClickEffect(x, y) {
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => createSparkle(x + (Math.random() - 0.5) * 30, y + (Math.random() - 0.5) * 30), i * 50);
+            }
+        }
+
+        // ==================== NAVIGATION ====================
+        function goToPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function selectMood(mood) {
+            launchConfetti();
+            setTimeout(() => {
+                const pages = {
+                    sad: 'pageSad',
+                    meh: 'pageMeh',
+                    okay: 'pageOkay',
+                    good: 'pageGood',
+                    great: 'pageGreat'
+                };
+                goToPage(pages[mood]);
+            }, 300);
+        }
+
+        // ==================== QUOTES ====================
+        function cycleQuote(mood) {
+            const quoteEl = document.getElementById(mood + 'Quote');
+            quoteEl.style.opacity = 0;
+            quoteEl.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                quoteIndexes[mood] = (quoteIndexes[mood] + 1) % quotes[mood].length;
+                quoteEl.textContent = quotes[mood][quoteIndexes[mood]];
+                quoteEl.style.opacity = 1;
+                quoteEl.style.transform = 'translateY(0)';
+            }, 300);
+        }
+
+        // ==================== CONFETTI ====================
+        function launchConfetti() {
+            const container = document.getElementById('confettiContainer');
+            const colors = ['#ff6b9d', '#e91e63', '#ffc2d1', '#ffd54f', '#e1bee7', '#b5ead7'];
+            const emojis = ['💕', '✨', '⭐', '💖', '🌟', '💗'];
+            
+            for (let i = 0; i < 40; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.textContent = Math.random() > 0.5 ? emojis[Math.floor(Math.random() * emojis.length)] : '';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.top = '-20px';
+                    confetti.style.fontSize = (0.8 + Math.random() * 0.6) + 'rem';
+                    confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+                    
+                    if (!confetti.textContent) {
+                        confetti.style.width = (6 + Math.random() * 8) + 'px';
+                        confetti.style.height = confetti.style.width;
+                        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                    }
+                    
+                    container.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 25);
+            }
+        }
+
+        function megaConfetti() {
+            launchConfetti();
+            setTimeout(launchConfetti, 400);
+            setTimeout(launchConfetti, 800);
+        }
+
+        // ==================== HUG OVERLAY ====================
+        function sendHug() {
+            document.getElementById('hugOverlay').classList.add('show');
+            incrementLove();
+            incrementLove();
+            incrementLove();
+        }
+
+        function closeHug() {
+            document.getElementById('hugOverlay').classList.remove('show');
+            launchConfetti();
+        }
+
+        // ==================== POPUPS ====================
+        function showPopup(emoji, title, text) {
+            document.getElementById('popupEmoji').textContent = emoji;
+            document.getElementById('popupTitle').textContent = title;
+            document.getElementById('popupText').textContent = text;
+            document.getElementById('popup').classList.add('show');
+        }
+
+        function closePopup() {
+            document.getElementById('popup').classList.remove('show');
+        }
+
+        // ==================== SECRET SYSTEM ====================
+        function foundSecret(id, emoji, title, text) {
+            if (secretsFound.has(id)) {
+                showPopup(emoji, 'Already found!', 'But thanks for the extra love! 💕');
+                return;
+            }
+            
+            secretsFound.add(id);
+            document.getElementById('secretCount').textContent = secretsFound.size;
+            
+            showPopup(emoji, title, text);
+            launchConfetti();
+            
+            // Mark as found visually if it's an element with the event
+            if (event && event.target) {
+                event.target.classList.add('found');
+            }
+            
+            // Check if all secrets found
+            if (secretsFound.size === 12) {
+                setTimeout(() => {
+                    showPopup('🏆', 'SECRET MASTER!', 'You found ALL the hidden surprises! You\'re absolutely incredible! 💕✨');
+                    megaConfetti();
+                }, 2000);
+            }
+        }
+
+        // ==================== LOVE COUNTER ====================
+        function incrementLove() {
+            loveCount++;
+            document.getElementById('loveCount').textContent = loveCount;
+            
+            if (loveCount === 25) {
+                showPopup('💖', '25 Love Clicks!', 'You\'re spreading so much love! 💕');
+            } else if (loveCount === 50) {
+                showPopup('💝', '50 Love Clicks!', 'Love multiplier activated! 💕✨');
+            } else if (loveCount === 100) {
+                showPopup('👑', '100 Love Clicks!', 'You are the LOVE CHAMPION! 💕👑✨');
+                megaConfetti();
+            }
+        }
+    </script>
 </body>
 </html>
